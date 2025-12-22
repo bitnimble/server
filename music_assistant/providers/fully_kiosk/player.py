@@ -71,17 +71,16 @@ class FullyKioskPlayer(Player):
         for volume_dict in self.fully_kiosk.deviceInfo.get("audioVolumes", []):
             if str(AUDIOMANAGER_STREAM_MUSIC) in volume_dict:
                 volume = volume_dict[str(AUDIOMANAGER_STREAM_MUSIC)]
-                self._attr_volume_level = volume
+                self.set_volume_attr(volume)
                 break
         current_url = self.fully_kiosk.deviceInfo.get("soundUrlPlaying")
         if not current_url:
             self._attr_playback_state = PlaybackState.IDLE
         self._attr_available = True
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Send VOLUME_SET command to given player."""
         await self.fully_kiosk.setAudioVolume(volume_level, AUDIOMANAGER_STREAM_MUSIC)
-        self._attr_volume_level = volume_level
         self.update_state()
 
     async def stop(self) -> None:

@@ -224,7 +224,7 @@ class SendspinPlayer(Player):
         else:
             self._attr_device_info = DeviceInfo()
         if player_client := sendspin_client.player:
-            self._attr_volume_level = player_client.volume
+            self.set_volume_attr(player_client.volume)
             self._attr_volume_muted = player_client.muted
         self._attr_available = True
         self.is_web_player = sendspin_client.name.startswith(
@@ -239,7 +239,7 @@ class SendspinPlayer(Player):
         self.logger.debug("Received PlayerEvent: %s", event)
         match event:
             case VolumeChangedEvent(volume=volume, muted=muted):
-                self._attr_volume_level = volume
+                self.set_volume_attr(volume)
                 self._attr_volume_muted = muted
                 self.update_state()
             case ClientGroupChangedEvent(new_group=new_group):
@@ -348,7 +348,7 @@ class SendspinPlayer(Player):
             case GroupDeletedEvent():
                 pass
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Handle VOLUME_SET command on the player."""
         if player_client := self.api.player:
             player_client.set_volume(volume_level)
@@ -604,6 +604,12 @@ class SendspinPlayer(Player):
             CONF_ENTRY_HTTP_PROFILE_HIDDEN,
             ConfigEntry.from_dict({**CONF_ENTRY_SAMPLE_RATES.to_dict(), "hidden": True}),
         ]
+
+    async def on_config_updated(self) -> None:
+        """Update max volume upon registration or config reload."""
+        if player_client := self.api.player:
+            if player_client.volume > self.max_volume:
+                player_client.set_volume(self.max_volume)
 
     async def on_unload(self) -> None:
         """Handle logic when the player is unloaded from the Player controller."""

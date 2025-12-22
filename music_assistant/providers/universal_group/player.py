@@ -209,7 +209,7 @@ class UniversalGroupPlayer(GroupPlayer):
             self._attr_group_members = self._attr_static_group_members.copy()
         self.update_state()
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Send VOLUME_SET command to given player."""
         # group volume is already handled in the player manager
 

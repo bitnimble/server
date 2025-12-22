@@ -210,7 +210,7 @@ class DLNAPlayer(Player):
             return
         assert self.device is not None  # for type checking
         self._attr_name = self.device.name
-        self._attr_volume_level = int((self.device.volume_level or 0) * 100)
+        self.set_volume_attr(int((self.device.volume_level or 0) * 100))
         self._attr_volume_muted = self.device.is_volume_muted or False
         _playback_state = self._get_playback_state()
         assert _playback_state is not None  # for type checking
@@ -347,7 +347,7 @@ class DLNAPlayer(Player):
             await self.device.async_stop()
 
     @catch_request_errors
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Send VOLUME_SET command to given player."""
         assert self.device is not None  # for type checking
         await self.device.async_set_volume_level(volume_level / 100)

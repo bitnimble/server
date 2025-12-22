@@ -80,6 +80,7 @@ from music_assistant.constants import (
     CONF_POWER_CONTROL,
     CONF_PRE_ANNOUNCE_CHIME_URL,
     CONF_VOLUME_CONTROL,
+    CONF_VOLUME_MAX,
 )
 from music_assistant.helpers.util import (
     get_changed_dataclass_values,
@@ -422,9 +423,30 @@ class Player(ABC):
 
         :param volume_level: volume level (0..100) to set on the player.
         """
+        scaled_volume = round(self.max_volume * float(volume_level) / 100)
+        self._attr_volume_level = volume_level
+        await self._volume_set_internal(scaled_volume)
+
+    async def _volume_set_internal(self, volume_level: int) -> None:
+        """
+        Handle setting volume on the player internally.
+
+        :param volume_level: volume level (0..CONF_VOLUME_MAX) to set on the player.
+        """
         raise NotImplementedError(
-            "volume_set needs to be implemented when PlayerFeature.VOLUME_SET is set"
+            "_volume_set_internal needs to be implemented when PlayerFeature.VOLUME_SET is set"
         )
+
+    def set_volume_attr(self, volume_level: int) -> None:
+        """
+        Handle volume change event on the player and update _attr_volume_level.
+
+        This should be called when volume level of the player changes on the player itself, to
+        correctly handle scaling back the volume level to 0..100 range.
+
+        :param volume_level: The new volume level (0..100) of the player.
+        """
+        self._attr_volume_level = round(100 * float(volume_level) / self.max_volume)
 
     async def volume_mute(self, muted: bool) -> None:
         """
@@ -953,6 +975,12 @@ class Player(ABC):
 
     @property
     @final
+    def max_volume(self) -> int:
+        """Return the maximum volume level for this player."""
+        return cast("int", self._config.get_value(CONF_VOLUME_MAX)) or 100
+
+    @property
+    @final
     def group_volume(self) -> int:
         """
         Return the group volume level.
@@ -1204,6 +1232,18 @@ class Player(ABC):
                     *base_mute_options,
                     *[ConfigValueOption(x.name, x.id) for x in mute_controls],
                 ],
+                category="player_controls",
+            ),
+            # Max volume config entry
+            ConfigEntry(
+                key=CONF_VOLUME_MAX,
+                type=ConfigEntryType.INTEGER,
+                label="Max volume",
+                default_value=100,
+                required=True,
+                description="Maximum volume level for the player (0-100). Note that the UI will "
+                "still show 0-100, but the maximum value of 100 will be scaled down to this "
+                "value instead.",
                 category="player_controls",
             ),
         ]

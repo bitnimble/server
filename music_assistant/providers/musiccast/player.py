@@ -158,7 +158,7 @@ class MusicCastPlayer(Player):
             _max_volume = 100 if _max_volume is None else _max_volume
             if _min_volume == _max_volume:
                 _max_volume += 1
-            self._attr_volume_level = int(_current_volume / (_max_volume - _min_volume) * 100)
+            self.set_volume_attr(int(_current_volume / (_max_volume - _min_volume) * 100))
         self._attr_volume_muted = zone_data.mute
 
         # STATE
@@ -444,7 +444,7 @@ class MusicCastPlayer(Player):
         else:
             await self._cmd_run(self.zone_device.turn_off)
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Volume set command."""
         await self._cmd_run(self.zone_device.volume_set, volume_level)
 

@@ -101,7 +101,7 @@ class SonosPlayer(Player):
 
     async def setup(self) -> None:
         """Set up the player."""
-        self._attr_volume_level = self.soco.volume
+        self.set_volume_attr(self.soco.volume)
         self._attr_volume_muted = self.soco.mute
         self.update_groups()
         if not self.synced_to:
@@ -180,7 +180,7 @@ class SonosPlayer(Player):
         await asyncio.to_thread(self.soco.pause)
         self.mass.call_later(2, self.poll)
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Send VOLUME_SET command to the player."""
 
         def set_volume_level(volume_level: int) -> None:
@@ -277,7 +277,7 @@ class SonosPlayer(Player):
             """Poll the speaker for updates (NOT async friendly)."""
             self.update_groups()
             self.poll_media()
-            self._attr_volume_level = self.soco.volume
+            self.set_volume_attr(self.soco.volume)
             self._attr_volume_muted = self.soco.mute
 
         await asyncio.to_thread(_poll)
@@ -500,7 +500,7 @@ class SonosPlayer(Player):
 
         if "volume" in variables:
             volume = variables["volume"]
-            self._attr_volume_level = int(volume["Master"])
+            self.set_volume_attr(int(volume["Master"]))
 
         if mute := variables.get("mute"):
             self._attr_volume_muted = mute["Master"] == "1"

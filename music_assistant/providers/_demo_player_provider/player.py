@@ -5,7 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from music_assistant_models.config_entries import ConfigEntry, ConfigValueType
-from music_assistant_models.enums import ConfigEntryType, PlaybackState, PlayerFeature, PlayerType
+from music_assistant_models.enums import (
+    ConfigEntryType,
+    PlaybackState,
+    PlayerFeature,
+    PlayerType,
+)
 from music_assistant_models.player import PlayerSource
 
 from music_assistant.models.player import Player, PlayerMedia
@@ -133,7 +138,7 @@ class DemoPlayer(Player):
         # update the player state in the player manager
         self.update_state()
 
-    async def volume_set(self, volume_level: int) -> None:
+    async def _volume_set_internal(self, volume_level: int) -> None:
         """Handle VOLUME_SET command on the player."""
         # OPTIONAL - required only if you specified PlayerFeature.VOLUME_SET
         # this method should send a volume set command to the given player.
@@ -148,7 +153,6 @@ class DemoPlayer(Player):
             self.display_name,
             volume_level,
         )
-        self._attr_volume_level = volume_level  # volume level is between 0 and 100
         # update the player state in the player manager
         self.update_state()
 
