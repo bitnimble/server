@@ -605,12 +605,6 @@ class SendspinPlayer(Player):
             ConfigEntry.from_dict({**CONF_ENTRY_SAMPLE_RATES.to_dict(), "hidden": True}),
         ]
 
-    async def on_config_updated(self) -> None:
-        """Update max volume upon registration or config reload."""
-        if player_client := self.api.player:
-            if player_client.volume > self.max_volume:
-                player_client.set_volume(self.max_volume)
-
     async def on_unload(self) -> None:
         """Handle logic when the player is unloaded from the Player controller."""
         await super().on_unload()

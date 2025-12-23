@@ -1351,7 +1351,7 @@ class PlayerController(CoreController):
 
         # ensure we fetch and set the latest/full config for the player
         player_config = await self.mass.config.get_player_config(player_id)
-        player.set_config(player_config)
+        await player.set_config(player_config)
         # call hook after the player is registered and config is set
         await player.on_config_updated()
 
@@ -1781,7 +1781,7 @@ class PlayerController(CoreController):
             elif player.playback_state != PlaybackState.IDLE:
                 await self.cmd_stop(config.player_id)
         # ensure player state gets updated with any updated config
-        player.set_config(config)
+        await player.set_config(config)
         await player.on_config_updated()
         player.update_state()
         # if the PlayerQueue was playing, restart playback
@@ -2352,20 +2352,23 @@ class PlayerController(CoreController):
             )
             await self.cmd_volume_mute(player_id, False)
 
+        scaled_volume = round(player.max_volume * volume_level / 100.0)
         # Check if a plugin source is active with a volume callback
         if plugin_source := self._get_active_plugin_source(player):
             if plugin_source.on_volume:
-                await plugin_source.on_volume(volume_level)
+                await plugin_source.on_volume(scaled_volume)
 
         if player.volume_control == PLAYER_CONTROL_NATIVE:
             # player supports volume command natively: forward to player
             async with self._player_throttlers[player_id]:
+                # Note that volume_set handles volume scaling internally, so use volume_level
+                # directly
                 await player.volume_set(volume_level)
             return
         if player.volume_control == PLAYER_CONTROL_FAKE:
             # user wants to use fake volume control - so we (optimistically) update the state
             # and store the state in the cache
-            player.extra_data[ATTR_FAKE_VOLUME] = volume_level
+            player.extra_data[ATTR_FAKE_VOLUME] = scaled_volume
             # trigger update
             player.update_state()
             return
@@ -2377,7 +2380,7 @@ class PlayerController(CoreController):
             raise UnsupportedFeaturedException(f"Player control {control_name} is not available")
         async with self._player_throttlers[player_id]:
             assert player_control.volume_set is not None
-            await player_control.volume_set(volume_level)
+            await player_control.volume_set(scaled_volume)
 
     def __iter__(self) -> Iterator[Player]:
         """Iterate over all players."""

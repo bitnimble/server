@@ -140,7 +140,10 @@ class Player(ABC):
     _attr_name: str | None = None
     _attr_powered: bool | None = None
     _attr_playback_state: PlaybackState = PlaybackState.IDLE
+    # External volume level (0..100)
     _attr_volume_level: int | None = None
+    # Internal / raw volume level (0..CONF_VOLUME_MAX)
+    _attr_volume_level_internal: int | None = None
     _attr_volume_muted: bool | None = None
     _attr_elapsed_time: float | None = None
     _attr_elapsed_time_last_updated: float | None = None
@@ -423,8 +426,9 @@ class Player(ABC):
 
         :param volume_level: volume level (0..100) to set on the player.
         """
-        scaled_volume = round(self.max_volume * float(volume_level) / 100)
+        scaled_volume = round(self.max_volume * volume_level / 100.0)
         self._attr_volume_level = volume_level
+        self._attr_volume_level_internal = scaled_volume
         await self._volume_set_internal(scaled_volume)
 
     async def _volume_set_internal(self, volume_level: int) -> None:
@@ -446,7 +450,7 @@ class Player(ABC):
 
         :param volume_level: The new volume level (0..100) of the player.
         """
-        self._attr_volume_level = round(100 * float(volume_level) / self.max_volume)
+        self._attr_volume_level = round(100.0 * volume_level / self.max_volume)
 
     async def volume_mute(self, muted: bool) -> None:
         """
@@ -1130,7 +1134,7 @@ class Player(ABC):
             self._attr_current_media.custom_data = custom_data
 
     @final
-    def set_config(self, config: PlayerConfig) -> None:
+    async def set_config(self, config: PlayerConfig) -> None:
         """
         Set/update the player config.
 
@@ -1138,6 +1142,10 @@ class Player(ABC):
         """
         # TODO: validate that caller is the PlayerController ?
         self._config = config
+        # Check max volume and reapply if needed
+        if (vol := self._attr_volume_level_internal) and vol > self.max_volume:
+            # `volume_set` applies volume scaling
+            await self.volume_set(vol)
 
     @final
     def to_dict(self) -> dict[str, Any]:
