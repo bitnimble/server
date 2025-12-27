@@ -138,7 +138,7 @@ class DemoPlayer(Player):
         # update the player state in the player manager
         self.update_state()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Handle VOLUME_SET command on the player."""
         # OPTIONAL - required only if you specified PlayerFeature.VOLUME_SET
         # this method should send a volume set command to the given player.
@@ -151,7 +151,7 @@ class DemoPlayer(Player):
         logger.info(
             "Received VOLUME_SET command on player %s with level %s",
             self.display_name,
-            volume_level,
+            self._raw_volume_level,
         )
         # update the player state in the player manager
         self.update_state()
@@ -339,4 +339,4 @@ class DemoPlayer(Player):
         """Update/set (dynamic) properties."""
         self._attr_powered = True
         self._attr_volume_muted = False
-        self._attr_volume_level = 50
+        self._attr_volume_level.set_pct_value(50)

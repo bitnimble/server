@@ -140,10 +140,7 @@ class Player(ABC):
     _attr_name: str | None = None
     _attr_powered: bool | None = None
     _attr_playback_state: PlaybackState = PlaybackState.IDLE
-    # External volume level (0..100)
-    _attr_volume_level: int | None = None
-    # Internal / raw volume level (0..CONF_VOLUME_MAX)
-    _attr_volume_level_internal: int | None = None
+    _attr_volume_level: Volume
     _attr_volume_muted: bool | None = None
     _attr_elapsed_time: float | None = None
     _attr_elapsed_time_last_updated: float | None = None
@@ -167,6 +164,8 @@ class Player(ABC):
         self._attr_device_info = DeviceInfo()
         self._attr_can_group_with = set()
         self._attr_source_list = []
+        # TODO: move 20 default volume to model.constants?
+        self._attr_volume_level = Volume(100, 20)
         # do not override/overwrite these private attributes below!
         self._cache: dict[str, Any] = {}  # storage dict for cached properties
         self._player_id = player_id
@@ -338,7 +337,7 @@ class Player(ABC):
         return self._attr_powered
 
     @property
-    def _volume_level(self) -> int | None:
+    def _volume_level(self) -> int:
         """
         Return the current volume level (0..100) of the player.
 
@@ -350,7 +349,12 @@ class Player(ABC):
         Hence it's marked as a private property.
         The final volume level state can be retrieved by using the 'volume_level' property.
         """
-        return self._attr_volume_level
+        return self._attr_volume_level.pct_value
+
+    @property
+    def _raw_volume_level(self) -> int:
+        """Return the current raw volume level (0..CONF_MAX_VOLUME) of the player."""
+        return self._attr_volume_level.raw_value
 
     @property
     def _volume_muted(self) -> bool | None:
@@ -426,31 +430,14 @@ class Player(ABC):
 
         :param volume_level: volume level (0..100) to set on the player.
         """
-        scaled_volume = round(self.max_volume * volume_level / 100.0)
-        self._attr_volume_level = volume_level
-        self._attr_volume_level_internal = scaled_volume
-        await self._volume_set_internal(scaled_volume)
+        self._attr_volume_level.set_pct_value(volume_level)
+        await self._volume_set_internal()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
-        """
-        Handle setting volume on the player internally.
-
-        :param volume_level: volume level (0..CONF_VOLUME_MAX) to set on the player.
-        """
+    async def _volume_set_internal(self) -> None:
+        """Handle setting volume on the player internally."""
         raise NotImplementedError(
             "_volume_set_internal needs to be implemented when PlayerFeature.VOLUME_SET is set"
         )
-
-    def set_volume_attr(self, volume_level: int) -> None:
-        """
-        Handle volume change event on the player and update _attr_volume_level.
-
-        This should be called when volume level of the player changes on the player itself, to
-        correctly handle scaling back the volume level to 0..100 range.
-
-        :param volume_level: The new volume level (0..100) of the player.
-        """
-        self._attr_volume_level = round(100.0 * volume_level / self.max_volume)
 
     async def volume_mute(self, muted: bool) -> None:
         """
@@ -1142,10 +1129,10 @@ class Player(ABC):
         """
         # TODO: validate that caller is the PlayerController ?
         self._config = config
-        # Check max volume and reapply if needed
-        if (vol := self._attr_volume_level_internal) and vol > self.max_volume:
-            # `volume_set` applies volume scaling
-            await self.volume_set(vol)
+        # Update max volume
+        self._attr_volume_level.set_limit(self.max_volume)
+        # Update volume on the player in case the max volume limit changed
+        await self._volume_set_internal()
 
     @final
     def to_dict(self) -> dict[str, Any]:
@@ -1588,6 +1575,41 @@ __all__ = [
     "PlayerSource",
     "PlayerState",
 ]
+
+
+class Volume:
+    """Helper class for managing volumes for a player that has volume limits."""
+
+    _pct_limit: int = 100
+    _pct_value = 20
+
+    def __init__(
+        self,
+        limit: int,
+        pct_value: int,
+    ) -> None:
+        self._pct_limit = limit
+        self._pct_value = pct_value
+
+    def set_limit(self, limit: int) -> None:
+        self._pct_limit = limit
+
+    def set_pct_value(self, pct_value: int) -> None:
+        self._pct_value = pct_value
+
+    def set_raw_value(self, raw_value: int) -> None:
+        """Convert a limited/scaled volume back to a UI-appropriate volume (0-100%)."""
+        self._pct_value = min(100, round(raw_value / (self._pct_limit / 100.0)))
+
+    @property
+    def raw_value(self) -> int:
+        """Return the limited/scaled current volume (0-_pct_limit)."""
+        return min(self._pct_limit, round(self._pct_value * (self._pct_limit / 100.0)))
+
+    @property
+    def pct_value(self) -> int:
+        """Return the current volume (0-100)."""
+        return self._pct_value
 
 
 class GroupPlayer(Player):

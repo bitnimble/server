@@ -85,9 +85,9 @@ class SnapCastPlayer(Player):
         }
         self._attr_can_group_with = {self.provider.instance_id}
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Send VOLUME_SET command to given player."""
-        await self.snap_client.set_volume(volume_level)
+        await self.snap_client.set_volume(self._raw_volume_level)
 
     async def stop(self) -> None:
         """Send STOP command to given player."""
@@ -306,7 +306,7 @@ class SnapCastPlayer(Player):
         This is a callback function
         """
         self._attr_name = self.snap_client.friendly_name
-        self.set_volume_attr(self.snap_client.volume)
+        self._attr_volume_level.set_raw_value(self.snap_client.volume)
         self._attr_volume_muted = self.snap_client.muted
         self._attr_available = self.snap_client.connected
 

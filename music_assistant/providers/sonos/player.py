@@ -245,7 +245,7 @@ class SonosPlayer(Player):
             return None
         return airplay_player
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """
         Handle VOLUME_SET command on the player.
 
@@ -253,11 +253,12 @@ class SonosPlayer(Player):
 
         :param volume_level: volume level (0..CONF_VOLUME_MAX) to set on the player.
         """
-        await self.client.player.set_volume(volume_level)
+        await self.client.player.set_volume(self._raw_volume_level)
         # sync volume level with airplay player
         if airplay_player := self.get_linked_airplay_player(False):
             if airplay_player.playback_state not in (PlaybackState.PLAYING, PlaybackState.PAUSED):
-                airplay_player.set_volume_attr(volume_level)
+                # airplay player may have a different max volume config, so use the raw values
+                airplay_player._attr_volume_level.set_raw_value(self._raw_volume_level)
 
     async def volume_mute(self, muted: bool) -> None:
         """
@@ -547,9 +548,9 @@ class SonosPlayer(Player):
         if not self.connected:
             return
         if self.client.player.has_fixed_volume:
-            self._attr_volume_level = 100
+            self._attr_volume_level.set_pct_value(100)
         else:
-            self.set_volume_attr(self.client.player.volume_level or 0)
+            self._attr_volume_level.set_raw_value(self.client.player.volume_level or 0)
         self._attr_volume_muted = self.client.player.volume_muted
 
         group_parent = None

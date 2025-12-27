@@ -174,6 +174,8 @@ class AirPlayProvider(PlayerProvider):
         ):
             volume = FALLBACK_VOLUME
 
+        self.logger.debug("Restored volume %s for player %s", volume, display_name)
+
         # Append airplay to the default name for non-apple devices
         # to make it easier for users to distinguish
         is_apple = manufacturer.lower() == "apple"

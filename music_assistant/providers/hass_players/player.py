@@ -208,13 +208,13 @@ class HomeAssistantPlayer(Player):
             self._attr_current_media = None
             self.update_state()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Handle VOLUME_SET command on the player."""
         await self.hass.call_service(
             domain="media_player",
             service="volume_set",
             target={"entity_id": self.player_id},
-            service_data={"volume_level": volume_level / 100},
+            service_data={"volume_level": self._raw_volume_level / 100},
         )
 
     async def volume_mute(self, muted: bool) -> None:
@@ -362,7 +362,7 @@ class HomeAssistantPlayer(Player):
             elif key == "media_position_updated_at":
                 self._attr_elapsed_time_last_updated = from_iso_string(value).timestamp()
             elif key == "volume_level":
-                self.set_volume_attr(int(value * 100))
+                self._attr_volume_level.set_raw_value(int(value * 100))
             elif key == "is_volume_muted":
                 self._attr_volume_muted = value
             elif key == "group_members":

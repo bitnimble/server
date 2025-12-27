@@ -104,7 +104,7 @@ class AirPlayPlayer(Player):
             PlayerFeature.MULTI_DEVICE_DSP,
             PlayerFeature.VOLUME_SET,
         }
-        self._attr_volume_level = min(initial_volume, self.max_volume)
+        self._attr_volume_level.set_raw_value(initial_volume)
         self._attr_can_group_with = {provider.instance_id}
         self._attr_enabled_by_default = not is_broken_airplay_model(manufacturer, model)
 
@@ -450,15 +450,15 @@ class AirPlayPlayer(Player):
         stream_session = AirPlayStreamSession(provider, sync_clients, AIRPLAY_FLOW_PCM_FORMAT)
         await stream_session.start(audio_source)
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Send VOLUME_SET command to given player."""
         if self.stream and self.stream.running:
-            await self.stream.send_cli_command(f"VOLUME={volume_level}\n")
+            await self.stream.send_cli_command(f"VOLUME={self._raw_volume_level}\n")
         self.update_state()
-        # store last state in cache
+        # store % volume in cache
         await self.mass.cache.set(
             key=self.player_id,
-            data=volume_level,
+            data=self._raw_volume_level,
             provider=self.provider.instance_id,
             category=CACHE_CATEGORY_PREV_VOLUME,
         )
@@ -561,9 +561,9 @@ class AirPlayPlayer(Player):
 
         cur_volume = self.volume_level or 0
         if abs(cur_volume - volume) > 3 or (time.time() - self.last_command_sent) > 3:
-            self.mass.create_task(self._volume_set_internal(min(self.max_volume, volume)))
+            self.mass.create_task(self._volume_set_internal())
         else:
-            self.set_volume_attr(volume)
+            self._attr_volume_level.set_raw_value(volume)
             self.update_state()
 
     def set_discovery_info(self, discovery_info: AsyncServiceInfo, display_name: str) -> None:

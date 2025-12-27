@@ -304,9 +304,9 @@ class AlexaPlayer(Player):
         self._attr_playback_state = PlaybackState.PAUSED
         self.update_state()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Handle VOLUME_SET command on the player."""
-        await self.api.set_volume(volume_level / 100)
+        await self.api.set_volume(self._raw_volume_level / 100)
         self.update_state()
 
     async def play_media(self, media: PlayerMedia) -> None:

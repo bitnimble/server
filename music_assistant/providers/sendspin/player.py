@@ -224,7 +224,7 @@ class SendspinPlayer(Player):
         else:
             self._attr_device_info = DeviceInfo()
         if player_client := sendspin_client.player:
-            self.set_volume_attr(player_client.volume)
+            self._attr_volume_level.set_raw_value(player_client.volume)
             self._attr_volume_muted = player_client.muted
         self._attr_available = True
         self.is_web_player = sendspin_client.name.startswith(
@@ -239,7 +239,7 @@ class SendspinPlayer(Player):
         self.logger.debug("Received PlayerEvent: %s", event)
         match event:
             case VolumeChangedEvent(volume=volume, muted=muted):
-                self.set_volume_attr(volume)
+                self._attr_volume_level.set_raw_value(volume)
                 self._attr_volume_muted = muted
                 self.update_state()
             case ClientGroupChangedEvent(new_group=new_group):
@@ -348,10 +348,10 @@ class SendspinPlayer(Player):
             case GroupDeletedEvent():
                 pass
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Handle VOLUME_SET command on the player."""
         if player_client := self.api.player:
-            player_client.set_volume(volume_level)
+            player_client.set_volume(self._raw_volume_level)
 
     async def volume_mute(self, muted: bool) -> None:
         """Handle VOLUME MUTE command on the player."""

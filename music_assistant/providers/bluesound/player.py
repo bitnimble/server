@@ -141,10 +141,10 @@ class BluesoundPlayer(Player):
         self._attr_playback_state = PlaybackState.PAUSED
         self.update_state()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Send VOLUME_SET command to BluOS player."""
-        await self.client.volume(level=volume_level, timeout=1)
-        self.logger.debug("Set BluOS speaker volume to %s", volume_level)
+        await self.client.volume(level=self._raw_volume_level, timeout=1)
+        self.logger.debug("Set BluOS speaker volume to %s", self._raw_volume_level)
         self.update_state()
 
     async def volume_mute(self, muted: bool) -> None:
@@ -361,9 +361,9 @@ class BluesoundPlayer(Player):
 
         if self.sync_status.volume == -1:
             # -1 is fixed volume
-            self._attr_volume_level = 100
+            self._attr_volume_level.set_pct_value(100)
         else:
-            self.set_volume_attr(self.sync_status.volume)
+            self._attr_volume_level.set_raw_value(self.sync_status.volume)
         self._attr_volume_muted = self.status.mute
 
         if not self.sync_status.leader:

@@ -309,7 +309,7 @@ class SyncGroupPlayer(GroupPlayer):
             self.sync_leader = None
         self.update_state()
 
-    async def _volume_set_internal(self, volume_level: int) -> None:
+    async def _volume_set_internal(self) -> None:
         """Send VOLUME_SET command to given player."""
         # group volume is already handled in the player manager
 
