@@ -79,7 +79,7 @@ class RaopStream(AirPlayProtocol):
             "-latency",
             str(AIRPLAY_OUTPUT_BUFFER_DURATION_MS),
             "-volume",
-            str(self.player.volume_level),
+            str(self.player._raw_volume_level),
             *extra_args,
             "-dacp",
             cast("AirPlayProvider", self.prov).dacp_id,
@@ -115,7 +115,7 @@ class RaopStream(AirPlayProtocol):
         # repeat sending the volume level to the player because some players seem
         # to ignore it the first time
         # https://github.com/music-assistant/support/issues/3330
-        self.mass.call_later(1, self.send_cli_command(f"VOLUME={self.player.volume_level}\n"))
+        self.mass.call_later(1, self.send_cli_command(f"VOLUME={self.player._raw_volume_level}\n"))
 
     async def start_pairing(self) -> None:
         """Start pairing process for this protocol (if supported)."""

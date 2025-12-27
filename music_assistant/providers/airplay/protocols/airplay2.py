@@ -86,7 +86,7 @@ class AirPlay2Stream(AirPlayProtocol):
             "--ntpstart",
             str(start_ntp),
             "--volume",
-            str(self.player.volume_level),
+            str(self.player._raw_volume_level),
             "--loglevel",
             str(self._cli_loglevel),
             "--pipe",

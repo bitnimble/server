@@ -559,7 +559,7 @@ class AirPlayPlayer(Player):
         if ignore_volume_report:
             return
 
-        cur_volume = self.volume_level or 0
+        cur_volume = self._raw_volume_level or 0
         if abs(cur_volume - volume) > 3 or (time.time() - self.last_command_sent) > 3:
             self.mass.create_task(self._volume_set_internal())
         else:
