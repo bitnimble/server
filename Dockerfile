@@ -21,6 +21,7 @@ RUN uv venv $VIRTUAL_ENV
 RUN uv pip install \
     -r requirements_all.txt
 
+RUN apt-get install -y --no-install-recommends curl
 RUN uv pip install --system $(curl -s https://api.github.com/repos/bitnimble/frontend/releases/latest | grep browser_download_url | cut -d'"' -f 4 | head -n 1)
 
 # Install PyAV from pre-built wheel (built against system FFmpeg in base image)
