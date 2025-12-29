@@ -56,6 +56,8 @@ jobs:
           key: uv-${{ runner.os }}-3.12-${{ hashFiles('requirements_all.txt', 'pyproject.toml') }}
       - name: Install dependencies
         run: uv pip install --system . .[test] -r requirements_all.txt
+      - name: Install forked frontend
+        run: uv pip install --system $(curl -s https://api.github.com/repos/bitnimble/frontend/releases/latest | grep browser_download_url | cut -d'"' -f 4 | head -n 1)
       - name: Lint/test with pre-commit
         run: SKIP=no-commit-to-branch pre-commit run --all-files
 
@@ -99,5 +101,7 @@ jobs:
           key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements_all.txt', 'pyproject.toml') }}
       - name: Install dependencies
         run: uv pip install --system . .[test] -r requirements_all.txt
+      - name: Install forked frontend
+        run: uv pip install --system $(curl -s https://api.github.com/repos/bitnimble/frontend/releases/latest | grep browser_download_url | cut -d'"' -f 4 | head -n 1)
       - name: Pytest
         run: pytest --durations 10 --cov-report term-missing --cov=music_assistant --cov-report=xml tests/

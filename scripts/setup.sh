@@ -28,6 +28,7 @@ echo "Installing development dependencies..."
 uv pip install -e "."
 uv pip install -e ".[test]"
 [[ -f requirements_all.txt ]] && uv pip install -r requirements_all.txt
+uv pip install --system "$(curl -s https://api.github.com/repos/bitnimble/frontend/releases/latest | grep browser_download_url | cut -d'"' -f 4 | head -n 1)"
 
 
 # Install pre-commit hooks if pre-commit is available
